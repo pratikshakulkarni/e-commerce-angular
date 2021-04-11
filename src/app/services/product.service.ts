@@ -16,35 +16,48 @@ export class ProductService {
 
   constructor(private httpClient: HttpClient) { }
 
-  getProductList(theCategoryId: number):Observable<Product[]>{
+  getProductList(theCategoryId: number): Observable<Product[]> {
 
     //Need to create new url for ID
     const searcUrl = `${this.baseUrl}/search/findByCategoryId?id=${theCategoryId}`;
 
+    return this.getProducts(searcUrl);
+
+  }
+
+  searchKeywordProducts(theKeyword: string): Observable<Product[]> {
+    //Need to create new url for ID
+    const searcUrl = `${this.baseUrl}/search/findByNameContaining?name=${theKeyword}`;
+
+    return this.getProducts(searcUrl);
+
+  }
+
+  private getProducts(searcUrl: string): Observable<Product[]> {
     return this.httpClient.get<GetResponseProducts>(searcUrl).pipe(
-      map(response=>response._embedded.products)
+      map(response => response._embedded.products)
     );
   }
 
   getProductCategories(): Observable<ProductCategory[]> {
 
     return this.httpClient.get<GetResponseProductCategory>(this.categoryUrl).pipe(
-      map(response=>response._embedded.productCategory)
+      map(response => response._embedded.productCategory)
     );
 
-  
+
   }
 
 }
 
-interface GetResponseProducts{
+interface GetResponseProducts {
   _embedded: {
-    products:Product[];
+    products: Product[];
   }
 }
 
-interface GetResponseProductCategory{
+interface GetResponseProductCategory {
   _embedded: {
-    productCategory:ProductCategory[];
+    productCategory: ProductCategory[];
   }
 }
