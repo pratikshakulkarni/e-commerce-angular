@@ -1,3 +1,4 @@
+import { KeyedWrite } from '@angular/compiler';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Product } from 'src/app/common/product';
@@ -12,9 +13,18 @@ import { ProductService } from 'src/app/services/product.service';
 })
 export class ProductListComponent implements OnInit {
 
-  products: Product[];
-  currentCategoryId: number;
-  searchMode: boolean;
+  products: Product[] = [];
+  currentCategoryId: number = 1;
+  previousCategoryId: number = 1;
+  searchMode: boolean = false;
+
+  //Pagination properties
+  pageNumber : number = 1;
+  pageSize : number = 5;
+  totalElements : number = 0;
+
+  previousKeyword : string = null;
+
 
   constructor(private productService: ProductService,
     private route: ActivatedRoute) { }
@@ -43,11 +53,21 @@ export class ProductListComponent implements OnInit {
 
     //search for products using keywords 
 
-    this.productService.searchKeywordProducts(theKeyword).subscribe(
-      data=>{
-        this.products=data;
-      }
-    );
+    //If we have diff. keyword than previous 
+    //set pageNumber to 1
+
+    if(this.previousKeyword !=theKeyword){
+      this.pageNumber=1;
+    }
+
+    this.previousKeyword=theKeyword;
+
+    console.log(`keyowrd=${theKeyword} pageNumber = ${this.pageNumber}`);
+    
+
+    this.productService.searchProductListPaginate(this.pageNumber-1,
+                                                  this.pageSize,
+                                                  theKeyword).subscribe(this.processResult())
 
   }
 
@@ -65,12 +85,39 @@ export class ProductListComponent implements OnInit {
       this.currentCategoryId = 1
     }
 
+    /*
+    1. Check if you different category ID than the previous one
+    2. Angular will reuse the component if it currently being viewed.
+    */
+
+    //If we have diff. category ID than the previous one,
+    //set the pageNumber to 1
+    if(this.previousCategoryId != this.currentCategoryId){
+      this.pageNumber=1;
+    }
+
+    this.previousCategoryId = this.currentCategoryId;
+    console.log(`the current category id = ${this.currentCategoryId} page number = ${this.pageNumber}`);
+    
     //get the products using category id
-    this.productService.getProductList(this.currentCategoryId).subscribe(
-      data => {
-        this.products = data;
-      }
-    )
+    this.productService.getProductListPaginate(this.pageNumber - 1,
+                                              this.pageSize,
+                                              this.currentCategoryId)
+                                              .subscribe(this.processResult());
+  }
+  processResult() {
+    return data => {
+        this.products = data._embedded.products;
+        this.pageNumber = data.page.number + 1;
+        this.pageSize = data.page.size;
+        this.totalElements = data.page.totalElements
+    }
+  }
+
+  updatePageSize(pageSize:number){
+    this.pageSize=pageSize;
+    this.pageNumber=1;
+    this.listProducts();
   }
 
 
